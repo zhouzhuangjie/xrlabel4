@@ -17,7 +17,7 @@ def main(path):
       raw_n_dx=n_dx,
     )
     j+=1
-  print("从%s 文件中导入%s 个数据"%(path.rsplit('/',1)[-1],j))
+  print("导入%s 个数据"%j)
 
 
 
@@ -32,5 +32,7 @@ if __name__ == '__main__':
   django.setup()
 
   # path='/Users/zhouzhuangjie/PycharmProject/xrlabel/datas/test_pred_df.csv'
-  path = '/Users/zhouzhuangjie/Desktop/康睿文件/pn_nod_img_df2(1).csv'
+  #path = '/Users/zhouzhuangjie/Desktop/康睿文件/pn_nod_img_df2(1).csv'
+  path = '/home/zzj/projects/xrlabel4/datas/pn_nod_img_df2(1).csv'
+
   main(path)
