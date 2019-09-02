@@ -1,0 +1,483 @@
+{% extends  'base.html' %}
+{% block body %}
+    <style media="screen">
+        #img-detail {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9998;
+            color: #fff;
+        }
+
+        #img-detail .img-container {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            right: 320px;
+            bottom: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            z-index: 9999;
+            padding: 10px;
+            overflow: auto;
+        }
+
+        .img-container img {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .img-container .overview {
+            max-height: 100%;
+            max-width: 100%;
+        }
+
+        .img-container .original {
+            position: absolute;
+            left: 50%;
+            bottom: 15px;
+            width: 100px;
+            height: 30px;
+            line-height: 30px;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            text-align: center;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .submit-action {
+            width: 100px;
+        }
+
+        .fl {
+            float: left;
+        }
+
+        .fr {
+            float: right;
+        }
+
+        .submit-action-container {
+            text-align: center;
+        }
+
+        #img-detail .action-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            width: 300px;
+            padding: 30px;
+            border-radius: 5px;
+            z-index: 9999;
+            box-sizing: border-box;
+        }
+
+        .action-container h1 {
+            margin: 70px 0;
+        }
+
+        .action-container p {
+            margin-bottom: 30px;
+        }
+
+        .action-container p:last-child {
+            margin-top: 70px;
+        }
+
+        .action-container .close-action {
+            display: block;
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            transform: translateX(-50%);
+            height: 50px;
+            cursor: pointer;
+        }
+
+        #modal .correct-select {
+            margin: 0;
+        }
+
+        .dr_dx div {
+            display: inline-block;
+        }
+
+        input {
+            vertical-align: top;
+        }
+
+        .clear input {
+            margin-right: 10px;
+        }
+
+        .dr {
+            margin-top: 20px;
+            height: 24px;
+            width: 100%;
+            background: orange;
+            font-size: 16px;
+            line-height: 24px;
+            color: black;
+            text-align: center;
+        }
+
+        .dr input, label {
+            vertical-align: top;
+            display: inline;
+        }
+
+        .clear label {
+            font-size: 12px;
+
+        }
+
+        .clear div {
+            margin-right: 11px;
+            margin-top: 10px;
+        }
+
+        {#   .input1{#}
+        {#       background-color: greenyellow;#}
+        {#   }#}
+        {#    .input2{#}
+        {#        background-color: red;#}
+        {#    }#}
+        {#.input3{#}
+        {#        background-color: #ffffff;#}
+        {#    }#}
+        #form-container {
+            display: none;
+            background-color: cornflowerblue;
+            height: 80px;
+            width: 200px;
+            border: black 1px solid;
+            color: white;
+            margin-right: 200px;;
+        }
+
+        .uploadbtn {
+            margin-right: 200px;
+            margin-left: 20px;
+        }
+
+        .downloadbtn {
+            margin-left: 20px;
+        }
+
+        .p_dr_dx, .n_dr_dx {
+            width: 130px;
+            height: 200px;
+            background: #5bc0de;
+        }
+
+        .dr_dx label {
+            font-size: 16px;
+        }
+
+        .label_n, .label_p {
+            font-size: 16px;
+            color: #0e0e0e;
+        }
+
+        .raw_dx {
+            width: 150px;
+        }
+
+        .raw {
+            background: #dddddd;
+        }
+    </style>
+    {% if request.user.is_superuser %}
+        <button type="button" class="btn btn-primary fr uploadbtn">上传</button>
+        <button type="button" class="btn btn-success fr downloadbtn" onclick="location.href='/xr/download'">下载</button>
+        <button type="button" class="btn btn-default fr downloadbtn" onclick="location.href='/xr/count_dr'">查看工作量
+        </button>
+
+
+
+    {% endif %}
+
+
+    <button type="button" class="btn btn btn-warning fr downloadbtn" onclick="location.href='/xr/reset'">状态重置</button>
+    <br>
+
+
+    <div id="form-container">
+        <form enctype="multipart/form-data" action="/xr/upload" method="post">
+            <input type="file" name="file"/>
+            <br/>
+            <input type="submit" value="提交"/>
+        </form>
+    </div>
+    <br>
+    <ul class="thumbnails">
+        {% for image in images %}
+            <li class="span4">
+                <div class="thumbnail">
+                    <input class="hid" type="hidden" id="{{ image.id }}" value="{{ image.id }}"/>
+                    <img class="overview-img fundus-img" alt="XRay" title="点击查看大图"
+                         src="/xr/xrstatic/images/{{ image.imagepath }}"/>
+                    <div class="caption fl">
+
+                        <div class="raw">
+                            <div class='raw_dx fl'>
+                            <span class="diagnosis-title"
+                                  style="color: {% if image.raw_p_dx %} red{% else %}green{% endif %}">肺炎原始标记:<br>&nbsp;&nbsp;&nbsp;
+                                {% if image.raw_p_dx %}有肺炎 {% else %}
+                                    无肺炎
+                                {% endif %}</span>
+                            </div>
+
+
+                            <span class="diagnosis-title"
+                                  style="color: {% if image.raw_n_dx %} red{% else %}green {% endif %}">肺结核原始标记 :<br>&nbsp;&nbsp;&nbsp;
+                                {% if image.raw_n_dx %}有肺结核
+                                {% else %}无肺结核
+
+                                {% endif %}</span>
+                        </div>
+
+                        <div class="dr_dx">
+                            <div class="dr">医生复核</div>
+
+                            <div class="p_dr_dx fl dr_input">
+                                <div class="label_p">肺炎标记</div>
+
+                                <div class="p " image_id="{{ image.id }}">
+                                    <div class="input1 ">
+                                        <input type="radio" name="p_{{ forloop.counter }}{{ image.id }}" value="0"
+                                               id="p_n{{ image.id }}">
+                                        <label for="p_n{{ image.id }}">无肺炎</label>
+                                    </div>
+                                    <div class="input2 ">
+                                        <input type="radio" name="p_{{ forloop.counter }}{{ image.id }}" value="1"
+                                               id="p_h{{ image.id }}">
+                                        <label for="p_h{{ image.id }}">有肺炎</label>
+                                    </div>
+                                    <div class="input3 ">
+                                        <input type="radio" name="p_{{ forloop.counter }}{{ image.id }}" value="2"
+                                               id="p_d{{ image.id }}">
+                                        <label for="p_d{{ image.id }}">不确定</label>
+                                    </div>
+
+                                </div>
+
+
+                            </div>
+                            <div class="n_dr_dx fr dr_input">
+                                <div class="label_n
+">肺结核标记
+                                </div>
+
+                                <div class="n" image_id="{{ image.id }}">
+                                    <div class="input1 ">
+                                        <input type="radio" name="n_{{ forloop.counter }}{{ image.id }}" value="0"
+                                               id="n_n{{ image.id }}">
+                                        <label for="n_n{{ image.id }}">无肺结核</label>
+                                    </div>
+                                    <div class="input2 ">
+                                        <input type="radio" name="n_{{ forloop.counter }}{{ image.id }}" value="1"
+                                               id="n_h{{ image.id }}">
+                                        <label for="n_h{{ image.id }}">有肺结核</label>
+                                    </div>
+                                    <div class="input3 ">
+                                        <input type="radio" name="n_{{ forloop.counter }}{{ image.id }}" value="2"
+                                               id="n_d{{ image.id }}">
+                                        <label for="n_d{{ image.id }}">不确定</label>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="submit-action-container">
+        <button type="button" onclick="submit()" class="btn btn-success submit-action">提交(s)</button>
+        <button type="button" onclick="logout()" class="btn btn-info">退出系统</button>
+        <button type="button" class="btn btn-warning">进度:<span id="task"></span></button>
+    </div>
+
+    <!-- 查看大图 -->
+    <div id="img-detail">
+        <div class="img-container">
+            <img class="big-img overview" src="" alt="">
+            <div class="original">查看原图</div>
+        </div>
+        <div class="action-container">
+            <h1>医生诊断</h1>
+            {#    <p>#}
+            {#      <span class="diagnosis-title">医生诊断</span>#}
+            {#      <select class="" name="" id="big-img-select" multiple="multiple">#}
+            {#        <option value="DEFAULT" selected>未处理</option>#}
+            {#        {% for param in params %}#}
+            {#        <option value="{{param.value}}">{{param.name}}</option>#}
+            {#        {% endfor %}#}
+            {#      </select>#}
+            {#    </p>#}
+            <button type="button" class="btn btn-success close-action">关闭(c)</button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var globalData = {};
+
+        function closeModal(e) {
+            $("#img-detail").hide();
+            $('html').css('overflow', 'auto');
+            $(".big-img").addClass('overview');
+            $('.original').show();
+            var bigSelect = $("#big-img-select").val();
+            var $select = $("#" + $.data(globalData, "select-id"));
+            $select.val(bigSelect);
+        }
+
+        function logout() {
+            window.location.href = '/xr/logout';
+        }
+
+
+        function submit() {
+            var xr = [];
+            var p_selectValues = [];
+            var n_selectValues = [];
+            var isValidate = true;
+            {#var other = [];#}
+            var imageIDs = [];
+            {#var noClearImageIDs = [];#}
+            $('.p').each(function (i, e) {
+                    if ($(this).find("input[type='radio']:checked").length == 0) {
+
+                        alert('第' + (i+ 1) + '个没有诊断肺炎')
+
+                        isValidate = false;
+                        return false;
+                    }
+                    else {
+                        p_check_val = $(this).find("input[type='radio']:checked").val();
+                        p_selectValues.push(p_check_val)
+                    }
+
+                }
+            );
+
+            $('.n').each(function (i, e) {
+                    if ($(this).find("input[type='radio']:checked").length == 0) {
+
+
+                        alert('第' + (i + 1) + '个没有诊断肺结核')
+
+                        isValidate = false;
+                        return false;
+                    }
+                    else {
+                        n_check_val = $(this).find("input[type='radio']:checked").val();
+                        n_selectValues.push(n_check_val)
+                    }
+
+                }
+            )
+
+
+            if (isValidate) {
+
+                $('.n').each(function (idx, e) {
+                    imageIDs.push($(this).attr('image_id'))
+
+                });
+                alert(imageIDs)
+
+                $.ajax({
+                    type: "POST",
+                    url: "/xr/diagnose",
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify({
+                        ids: imageIDs,
+                        p_values: p_selectValues,
+                        n_values: n_selectValues,
+                    }),
+                    dataType: "json",
+                    success: function (message) {
+                        window.location.href = '/xr/main';
+                    },
+                    error: function (message) {
+                    }
+                });
+
+            }
+
+
+            {#$('ul.thumbnails').find('select').each(function(idx,e){#}
+            {#  if("DEFAULT" == $(this).val()){#}
+            {#    alert('第'+(idx+1)+'个没有诊断');#}
+            {#    isValidate = false;#}
+            {#    return false;#}
+            {#  }else{#}
+            {#    selectValues.push($(this).val());#}
+            {#  }#}
+            {#if(isValidate){#}
+            {#  var imageIds = [];#}
+
+
+        }
+
+        function getTask() {
+            $.ajax({
+                type: "POST",
+                url: "task",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (res) {
+                    if (res.success) {
+                        $.data(globalData, "hasDone", res.count);
+                        $("#task").html(res.count + '/' + res.total);
+                    }
+                },
+                error: function (message) {
+                }
+            });
+        }
+
+        $('.uploadbtn').click(function () {
+            $('#form-container').toggle()
+        })
+
+
+        $(document).ready(function () {
+            getTask();
+            $('.overview-img').click(function (e) {
+                $(".big-img").attr("src", $(this).attr("src"));
+                $("#img-detail").show();
+                var $select = $(this).parent().find("select");
+                $("#big-img-select").val($select.val());
+                $.data(globalData, "select-id", $select.attr("id"));
+                $('html').css('overflow', 'hidden');
+            });
+
+            $('#img-detail .close-action').click(closeModal);
+
+            $(document).keydown(function (e) {
+                if (e.which == 67) { //key "c"
+                    closeModal();
+                } else if (e.which == 83) { //key "s"
+                    if ($("#img-detail").is(":hidden")) {
+                        submit();
+                    }
+                }
+            });
+        })
+
+
+    </script>
+{% endblock %}

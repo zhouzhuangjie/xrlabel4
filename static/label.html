@@ -1,0 +1,241 @@
+{% extends  'base.html' %}
+{% block body %}
+    <style media="screen">
+        #img-detail {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 9998;
+            color: #fff;
+        }
+
+        #img-detail .img-container {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            right: 320px;
+            bottom: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            z-index: 9999;
+            padding: 10px;
+            overflow: auto;
+        }
+
+        .img-container img {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .img-container .overview {
+            max-height: 100%;
+            max-width: 100%;
+        }
+
+        .img-container .original {
+            position: absolute;
+            left: 50%;
+            bottom: 15px;
+            width: 100px;
+            height: 30px;
+            line-height: 30px;
+            transform: translateX(-50%);
+            border: 1px solid #fff;
+            text-align: center;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .submit-action {
+            width: 100px;
+        }
+
+        .submit-action-container {
+            text-align: center;
+        }
+
+        #img-detail .action-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            bottom: 20px;
+            width: 300px;
+            padding: 30px;
+            border-radius: 5px;
+            z-index: 9999;
+            box-sizing: border-box;
+        }
+
+        .action-container h1 {
+            margin: 70px 0;
+        }
+
+        .action-container p {
+            margin-bottom: 30px;
+        }
+
+        .action-container p:last-child {
+            margin-top: 70px;
+        }
+
+        .action-container .close-action {
+            display: block;
+            position: absolute;
+            left: 50%;
+            bottom: 10px;
+            transform: translateX(-50%);
+            height: 50px;
+            cursor: pointer;
+        }
+
+        #modal .correct-select {
+            margin: 0;
+        }
+
+        .thumbnail {
+            width: 600px;
+            height: 600px;
+        }
+    </style>
+    <ul class="thumbnails">
+        {% for image in images %}
+            <li class="span4">
+                <div class="thumbnail">
+                    <input type="hidden" id="{{ image.id }}" value="{{ image.id }}"/>
+                    <img class="overview-img fundus-img" alt="Fundus" title="点击查看大图"
+                         src="/xrstatic/{{ image.imagepath }}"/>
+                    <div class="caption">
+                        <p>
+
+
+                            <span class="diagnosis-title">医生标记</span>
+                            <select class="" name="" id="img-select{{ forloop.counter }}" multiple="multiple">
+                                <option value="DEFAULT" selected>未处理</option>
+                                {% for param in params %}
+                                    <option value="{{ param.id }}">{{ param.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </p>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="submit-action-container">
+        <button type="button" onclick="submit()" class="btn btn-success submit-action">提交(s)</button>
+        <button type="button" onclick="logout()" class="btn btn-info">退出系统(c)</button>
+        <button type="button" class="btn btn-warning">进度:<span id="task"></span></button>
+    </div>
+
+    <!-- 查看大图 -->
+    <div id="img-detail">
+        <div class="img-container">
+            <img class="big-img overview" src="" alt="">
+            <div class="original">查看原图</div>
+        </div>
+        <div class="action-container">
+            <h1>医生诊断</h1>
+
+            <button type="button" class="btn btn-success close-action">关闭(c)</button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var globalData = {};
+
+        function closeModal(e) {
+            $("#img-detail").hide();
+            $('html').css('overflow', 'auto');
+            $(".big-img").addClass('overview');
+            $('.original').show();
+            var bigSelect = $("#big-img-select").val();
+            var $select = $("#" + $.data(globalData, "select-id"));
+            $select.val(bigSelect);
+        }
+
+        function logout() {
+            window.location.href = '/logout';
+        }
+
+        function submit() {
+            var fundus = [];
+            var selectValues = [];
+            var isValidate = true;
+            $('ul.thumbnails').find('select').each(function (idx, e) {
+                if ("DEFAULT" == $(this).val()) {
+                    alert('第' + (idx + 1) + '个没有诊断');
+                    isValidate = false;
+                    return false;
+                } else {
+                    selectValues.push($(this).val());
+                }
+            });
+            if (isValidate) {
+                var imageIds = [];
+                $('ul.thumbnails').find('input').each(function (idx, e) {
+                    imageIds.push($(this).val());
+                });
+                $.ajax({
+                    type: "POST",
+                    url: "diagnose",
+                    contentType: "application/json; charset=utf-8",
+                    data: JSON.stringify({
+                        ids: imageIds,
+                        values: selectValues
+                    }),
+                    dataType: "json",
+                    success: function (message) {
+                        window.location.href = '/xr/main';
+                    },
+                    error: function (message) {
+                    }
+                });
+            }
+        }
+
+        function getTask() {
+            $.ajax({
+                type: "POST",
+                url: "task",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                success: function (res) {
+                    if (res.success) {
+                        $.data(globalData, "hasDone", res.count);
+                        $("#task").html(res.count + '/' + res.total);
+                    }
+                },
+                error: function (message) {
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            getTask();
+            $('.overview-img').click(function (e) {
+                $(".big-img").attr("src", $(this).attr("src"));
+                $("#img-detail").show();
+                var $select = $(this).parent().find("select");
+                $("#big-img-select").val($select.val());
+                $.data(globalData, "select-id", $select.attr("id"));
+                $('html').css('overflow', 'hidden');
+            });
+
+            $('#img-detail .close-action').click(closeModal);
+
+            $(document).keydown(function (e) {
+                if (e.which == 67) { //key "c"
+                    closeModal();
+                } else if (e.which == 83) { //key "s"
+                    if ($("#img-detail").is(":hidden")) {
+                        submit();
+                    }
+                }
+            });
+        })
+    </script>
+{% endblock %}
